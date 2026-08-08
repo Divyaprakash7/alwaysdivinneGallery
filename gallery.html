@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salon — Your Gallery</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --wall:#E7E3D8;
+    --wall-deep:#DBD6C6;
+    --card:#FBFAF6;
+    --line:#C9C2AE;
+    --ink:#221F19;
+    --ink-dim:#736C5C;
+    --accent:#2F6F63;
+    --accent-soft:rgba(47,111,99,0.10);
+    --danger:#B4483F;
+    --danger-soft:rgba(180,72,63,0.10);
+    --radius:9px;
+    --shadow:0 14px 30px rgba(34,31,25,0.14);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  body{
+    background:
+      radial-gradient(circle at 10% 0%, rgba(47,111,99,0.06), transparent 45%),
+      var(--wall);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:36px 24px 80px;
+  }
+
+  .wrap{ max-width:1240px; margin:0 auto; opacity:0; transform:translateY(18px); transition:opacity .55s ease, transform .55s ease; }
+  body.loaded .wrap{ opacity:1; transform:none; }
+
+  /* ---- Header ---- */
+  header{
+    position:relative;
+    display:flex;
+    opacity:0;
+    transform:translateY(-10px);
+    transition:opacity .45s ease, transform .45s ease;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:18px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:26px;
+    overflow:hidden;
+  }
+  header::before{
+    content:"";
+    position:absolute;
+    inset:-40px -24px auto -24px;
+    height:140px;
+    background:radial-gradient(280px circle at var(--mx,50%) var(--my,0%), rgba(47,111,99,0.14), transparent 70%);
+    pointer-events:none;
+    transition:opacity .3s ease;
+    opacity:0;
+  }
+  header:hover::before{ opacity:1; }
+  .brand h1{
+    font-family:'Newsreader', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:clamp(30px,4.4vw,44px);
+    letter-spacing:-0.01em;
+  }
+  .brand .tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-top:6px;
+  }
+  .count-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    text-align:right;
+  }
+  .count-badge b{ color:var(--ink); font-size:20px; display:block; font-weight:600; animation: badgePulse 6s ease-in-out infinite; }
+
+  body.loaded header{ opacity:1; transform:none; }
+
+  /* ---- Toolbar ---- */
+  .toolbar{
+    position:fixed;
+    right:24px;
+    bottom:24px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    z-index:90;
+    background:rgba(255,255,255,0.92);
+    padding:10px 12px;
+    border-radius:999px;
+    border:1px solid rgba(201,194,174,0.35);
+    box-shadow:0 20px 50px rgba(34,31,25,0.12);
+    backdrop-filter:blur(12px);
+    opacity:0;
+    transform:translateY(12px);
+    transition:opacity .45s ease, transform .45s ease, box-shadow .45s ease;
+    animation:floatAction 10s ease-in-out infinite;
+  }
+  body.loaded .toolbar{ opacity:1; transform:none; }
+  .btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:14px 20px;
+    border-radius:999px;
+    border:1px solid transparent;
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+    transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 18px 30px rgba(47,111,99,0.18);
+  }
+  .btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+  .btn:active{ transform:translateY(0) scale(.98); }
+  .btn.primary{ background:var(--accent); border-color:transparent; color:#fff; animation:pulseGlow 8s ease-in-out infinite; }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  @keyframes pulseGlow{ 0%,100%{ box-shadow:0 18px 30px rgba(47,111,99,0.18); } 50%{ box-shadow:0 24px 48px rgba(47,111,99,0.24); } }
+  @keyframes badgePulse{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-1px); } }
+  .lightbox-inner{ opacity:0; transform:translateY(12px); transition:opacity .3s ease, transform .3s ease; }
+  .lightbox.active .lightbox-inner{ opacity:1; transform:none; }
+  .btn .plus-icon{ display:inline-block; transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .btn:hover .plus-icon{ transform:rotate(90deg); }
+  #fileInput{ display:none; }
+
+  .ripple{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(255,255,255,0.55);
+    transform:scale(0);
+    animation:rippleAnim .5s ease-out forwards;
+    pointer-events:none;
+  }
+  @keyframes rippleAnim{ to{ transform:scale(2.6); opacity:0; } }
+
+  .conn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .conn .dot{ width:7px; height:7px; border-radius:50%; background:#a29b86; }
+  .conn.ok .dot{ background:var(--accent); }
+  .conn.err .dot{ background:var(--danger); }
+  .conn.busy .dot{ background:#C98A2C; animation:pulse 1s infinite; }
+  @keyframes pulse{ 50%{ opacity:.35; } }
+
+  /* ---- Drop zone overlay ---- */
+  .drop-overlay{
+    position:fixed; inset:0;
+    background:rgba(34,31,25,0.82);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:80;
+    color:#F5F2EA;
+    font-family:'Newsreader', serif;
+    font-style:italic;
+    font-size:28px;
+    text-align:center;
+    pointer-events:none;
+  }
+  .drop-overlay.active{ display:flex; }
+  .drop-overlay .box{
+    border:2px dashed rgba(245,242,218,0.5);
+    border-radius:16px;
+    padding:60px 80px;
+    animation:dropPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes dropPulse{
+    0%,100%{ border-color:rgba(245,242,218,0.35); transform:scale(1); }
+    50%{ border-color:rgba(245,242,218,0.75); transform:scale(1.02); }
+  }
+
+  /* ---- Salon wall (masonry) ---- */
+  .wall{
+    column-count:4;
+    column-gap:20px;
+    opacity:0;
+    transform:translateY(20px);
+    transition:opacity .55s ease, transform .55s ease;
+  }
+  body.loaded .wall{ opacity:1; transform:none; }
+  @media (max-width:1100px){ .wall{ column-count:3; } }
+  @media (max-width:760px){ .wall{ column-count:2; } }
+  @media (max-width:480px){ .wall{ column-count:1; } }
+
+  .frame{
+    break-inside:avoid;
+    margin-bottom:20px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px 10px 12px;
+    box-shadow:0 2px 6px rgba(34,31,25,0.06);
+    transition:box-shadow .2s ease, transform .12s ease;
+    animation:frameIn .4s cubic-bezier(.2,.8,.3,1) backwards;
+    position:relative;
+    transform-style:preserve-3d;
+    will-change:transform, opacity;
+  }
+  .frame:nth-child(3n){ rotate:-0.6deg; }
+  .frame:nth-child(3n+1){ rotate:0.5deg; }
+  .frame.tilting{ transition:box-shadow .2s ease; z-index:2; }
+  .frame.removing{ animation:frameOut .18s ease forwards; }
+  @keyframes frameIn{ from{ opacity:0; transform:translateY(14px) scale(.96); } to{ opacity:1; transform:none; } }
+  @keyframes frameOut{ to{ opacity:0; transform:scale(.9) rotate(2deg); } }
+  .frame:hover{ transform:translateY(-2px) scale(1.005); box-shadow:0 10px 24px rgba(34,31,25,0.14); }
+
+  .frame .photo-wrap{
+    position:relative;
+    border-radius:5px;
+    overflow:hidden;
+    background:var(--wall-deep);
+    cursor:zoom-in;
+  }
+  .frame img{ width:100%; display:block; transition:transform .35s cubic-bezier(.2,.8,.3,1); }
+  .frame.tilting img{ transform:scale(1.045); }
+
+  .frame .hover-actions{
+    position:absolute; top:10px; right:10px;
+    display:flex; gap:8px;
+    opacity:0; transform:translateY(-8px);
+    transition:opacity .18s ease, transform .18s ease;
+    pointer-events:none;
+  }
+  .frame:hover .hover-actions{
+    opacity:1; transform:translateY(0);
+    pointer-events:auto;
+  }
+  .frame .photo-wrap:hover img{ transform:scale(1.045); }
+  .frame .photo-wrap::after{
+    content:'View';
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#F5F2EA;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    background:rgba(34,31,25,0.16);
+    opacity:0;
+    transition:opacity .18s ease;
+    text-transform:uppercase;
+    pointer-events:none;
+  }
+  .frame .photo-wrap:hover::after{ opacity:1; }
+  .mini-btn{
+    min-width:84px;
+    height:36px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.12);
+    background:rgba(34,31,25,0.72);
+    color:#F5F2EA;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    gap:8px;
+    font-size:12px;
+    padding:0 12px;
+    backdrop-filter:blur(2px);
+    transition:transform .18s ease, background .18s ease, border-color .18s ease;
+  }
+  .mini-btn:hover{ background:rgba(34,31,25,0.95); transform:translateY(-1px); border-color:rgba(255,255,255,0.18); }
+  .mini-btn.share-btn{ background:rgba(47,111,99,0.92); }
+  .mini-btn.share-btn:hover{ background:rgba(47,111,99,1); }
+  .mini-btn.danger{
+    background:linear-gradient(135deg, rgba(180,72,63,0.95), rgba(180,72,63,0.85));
+    border-color:rgba(255,255,255,0.22);
+    box-shadow:0 6px 18px rgba(180,72,63,0.18);
+  }
+  .mini-btn.danger:hover{ background:linear-gradient(135deg, rgba(180,72,63,1), rgba(180,72,63,0.9)); }
+  .mini-btn span{ display:inline-block; letter-spacing:0.04em; }
+  .mini-btn.danger span:last-child{ font-weight:700; }
+
+  .frame .placard{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 3px 2px;
+    gap:8px;
+  }
+  .frame .placard .cat{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--accent);
+    letter-spacing:0.08em;
+  }
+  .frame .placard .date{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--ink-dim);
+  }
+
+  /* developing placeholder */
+  .frame.developing .photo-wrap{
+    aspect-ratio:4/3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(100deg, var(--wall-deep) 30%, #EFEBDF 50%, var(--wall-deep) 70%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+  }
+  @keyframes shimmer{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
+  .frame.developing .placard .cat{ color:var(--ink-dim); }
+  .frame.developing::after{
+    content:"developing…";
+    position:absolute;
+    bottom:26px; left:50%;
+    transform:translateX(-50%);
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--ink-dim);
+  }
+  .upload-progress{
+    position:absolute;
+    left:14px; right:14px; bottom:10px;
+    height:3px;
+    border-radius:2px;
+    background:rgba(34,31,25,0.12);
+    overflow:hidden;
+  }
+  .upload-progress .fill{
+    height:100%;
+    width:0%;
+    background:var(--accent);
+    border-radius:2px;
+    transition:width .15s ease;
+  }
+
+  /* ---- Empty state ---- */
+  .empty{
+    text-align:center;
+    padding:90px 20px;
+    color:var(--ink-dim);
+  }
+  .empty .glyph{ font-size:44px; margin-bottom:14px; display:inline-block; animation:floaty 3s ease-in-out infinite; }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+  .empty h2{
+    font-family:'Newsreader', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:24px;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .empty p{ font-size:13.5px; max-width:340px; margin:0 auto; }
+
+  /* ---- Lightbox ---- */
+  .lightbox{
+    position:fixed; inset:0;
+    background:rgba(20,18,14,0.94);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:40px 20px;
+  }
+  .lightbox.active{ display:flex; }
+  .lightbox-inner{
+    max-width:min(1000px, 92vw);
+    max-height:88vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+  .lightbox img{
+    max-width:100%;
+    max-height:70vh;
+    border-radius:6px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    animation:lbIn .3s cubic-bezier(.2,.8,.3,1), kenBurns 8s ease-in-out infinite alternate;
+  }
+  @keyframes lbIn{ from{ opacity:0; transform:scale(.94); } to{ opacity:1; transform:none; } }
+  @keyframes kenBurns{ from{ transform:scale(1); } to{ transform:scale(1.035); } }
+  .lightbox img.slide-next{ animation:lbInNext .32s cubic-bezier(.2,.8,.3,1), kenBurns 8s ease-in-out infinite alternate; }
+  .lightbox img.slide-prev{ animation:lbInPrev .32s cubic-bezier(.2,.8,.3,1), kenBurns 8s ease-in-out infinite alternate; }
+  @keyframes lbInNext{ from{ opacity:0; transform:translateX(26px) scale(.98); } to{ opacity:1; transform:none; } }
+  @keyframes lbInPrev{ from{ opacity:0; transform:translateX(-26px) scale(.98); } to{ opacity:1; transform:none; } }
+  @keyframes floatAction{ 0%,100%{ transform:translateY(12px); } 50%{ transform:translateY(8px); } }
+  .lightbox-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    width:100%;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .lightbox-meta .info{ color:#EDE8DA; }
+  .lightbox-meta .info .cat{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:#9BC9BC;
+    letter-spacing:0.08em;
+    margin-bottom:3px;
+  }
+  .lightbox-meta .info .name{
+    font-family:'Newsreader', serif;
+    font-style:italic;
+    font-size:19px;
+  }
+  .lightbox-actions{ display:flex; gap:8px; }
+  .lb-btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    padding:9px 14px;
+    border-radius:7px;
+    border:1px solid rgba(237,232,218,0.25);
+    background:rgba(237,232,218,0.06);
+    color:#EDE8DA;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .lb-btn:hover{ background:rgba(237,232,218,0.16); }
+  .lb-btn.danger:hover{ background:var(--danger); border-color:var(--danger); }
+  .lb-close{
+    position:absolute; top:22px; right:26px;
+    background:none; border:none;
+    color:#EDE8DA; font-size:26px; cursor:pointer;
+    line-height:1;
+    transition:transform .2s ease;
+  }
+  .lb-close:hover{ transform:rotate(90deg); }
+  .lb-nav{
+    position:absolute; top:50%; transform:translateY(-50%);
+    background:rgba(237,232,218,0.08);
+    border:none; color:#EDE8DA;
+    width:44px; height:44px; border-radius:50%;
+    font-size:20px; cursor:pointer;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .lb-nav:hover{ background:rgba(237,232,218,0.2); transform:translateY(-50%) scale(1.1); }
+  .lb-nav:active{ transform:translateY(-50%) scale(.95); }
+  .lb-prev{ left:20px; }
+  .lb-next{ right:20px; }
+
+  /* ---- Toasts ---- */
+  .toast-stack{
+    position:fixed; bottom:20px; right:20px;
+    display:flex; flex-direction:column; gap:8px;
+    z-index:120;
+  }
+  .toast{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:12.5px;
+    font-family:'JetBrains Mono', monospace;
+    color:var(--ink);
+    box-shadow:var(--shadow);
+    animation:toastIn .22s cubic-bezier(.2,.8,.3,1);
+    max-width:280px;
+  }
+  .toast.err{ border-left-color:var(--danger); }
+  .toast.fade{ animation:toastOut .25s ease forwards; }
+  @keyframes toastIn{ from{ opacity:0; transform:translateY(8px) scale(.97); } to{ opacity:1; transform:none; } }
+  @keyframes toastOut{ to{ opacity:0; transform:translateY(6px) scale(.97); } }
+  .toast{ animation:toastIn .22s cubic-bezier(.2,.8,.3,1), toastPulse 8s ease-in-out infinite alternate; }
+  @keyframes toastPulse{ from{ transform:translateY(0); } to{ transform:translateY(-1px); } }
+
+  /* ---- Confirm delete popover ---- */
+  .confirm-pop{
+    position:absolute;
+    background:var(--ink);
+    color:#F5F2EA;
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    box-shadow:var(--shadow);
+    z-index:10;
+    white-space:nowrap;
+  }
+  .confirm-pop button{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:11.5px;
+    border:none;
+    border-radius:5px;
+    padding:5px 9px;
+    cursor:pointer;
+  }
+  .confirm-pop .yes{ background:var(--danger); color:#fff; }
+  .confirm-pop .no{ background:rgba(245,242,234,0.14); color:#F5F2EA; }
+
+  footer{
+    text-align:center;
+    margin-top:40px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:#9a927e;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>Alwaysdivinne Gallery</h1>
+      <div class="tag">Your gallery · stored in Google Drive</div>
+    </div>
+    <div class="count-badge"><b id="photoCount">0</b>photos on the wall</div>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn primary" id="uploadBtn">
+      <span class="plus-icon">＋</span> Add pictures
+    </button>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <div class="conn" id="conn"><span class="dot"></span><span id="connLabel">connecting…</span></div>
+  </div>
+
+  <div class="wall" id="wall"></div>
+
+  <div class="empty" id="emptyState" style="display:none;">
+    <div class="glyph">🖼️</div>
+    <h2>The wall is bare</h2>
+    <p>Add your first picture and it'll be hung right here — and saved straight to your Google Drive.</p>
+  </div>
+
+  <footer>Pictures live in your own Google Drive · nothing else can see them unless you share the link.</footer>
+</div>
+
+<div class="drop-overlay" id="dropOverlay">
+  <div class="box">Drop to hang on the wall</div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose" aria-label="Close">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous">‹</button>
+  <button class="lb-nav lb-next" id="lbNext" aria-label="Next">›</button>
+  <div class="lightbox-inner">
+    <img id="lbImg" src="" alt="">
+    <div class="lightbox-meta">
+      <div class="info">
+        <div class="cat" id="lbCat"></div>
+        <div class="name" id="lbName"></div>
+      </div>
+      <div class="lightbox-actions">
+        <button class="lb-btn" id="lbShare">Share</button>
+        <button class="lb-btn danger" id="lbDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+  // ============================================================
+  // BACKEND CONFIG — paste your deployed Google Apps Script
+  // Web App URL below (see gallery-apps-script.gs setup steps).
+  // ============================================================
+  const CONFIG = {
+    DRIVE_API_URL: "https://script.google.com/macros/s/AKfycbzCpWb380l3GK08hr3hi0bVJK3RYTT16mijCMM9m6J6ILGEsbvU76YZbK64UBz-6MSehw/exec",
+    MAX_DIMENSION: 1800,   // photos are resized to fit within this before upload
+    JPEG_QUALITY: 0.86
+  };
+  // ============================================================
+
+  let photos = []; // {id, name, url, viewUrl, shareUrl, mimeType, createdTime}
+  let lightboxIndex = -1;
+
+  const wall = document.getElementById('wall');
+  const emptyState = document.getElementById('emptyState');
+  const photoCount = document.getElementById('photoCount');
+  const connEl = document.getElementById('conn');
+  const connLabel = document.getElementById('connLabel');
+  const toastStack = document.getElementById('toastStack');
+
+  // ---------- header cursor spotlight ----------
+  const headerEl = document.querySelector('header');
+  headerEl.addEventListener('mousemove', e => {
+    const rect = headerEl.getBoundingClientRect();
+    headerEl.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
+    headerEl.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
+  });
+
+  // ---------- ripple effect for buttons ----------
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn, .lb-btn, .mini-btn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.4;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    const prevPos = getComputedStyle(btn).position;
+    if (prevPos === 'static') btn.style.position = 'relative';
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 500);
+  });
+
+  // ---------- animated count-up for the photo badge ----------
+  let displayedCount = 0;
+  function animateCount(target){
+    const start = displayedCount;
+    const diff = target - start;
+    if (!diff) return;
+    const duration = 400;
+    const t0 = performance.now();
+    function step(now){
+      const p = Math.min(1, (now - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      displayedCount = Math.round(start + diff * eased);
+      photoCount.textContent = displayedCount;
+      if (p < 1) requestAnimationFrame(step);
+      else displayedCount = target;
+    }
+    requestAnimationFrame(step);
+  }
+
+  function setConn(state, label){
+    connEl.className = 'conn' + (state ? ' ' + state : '');
+    connLabel.textContent = label;
+  }
+  function backendConfigured(){
+    return CONFIG.DRIVE_API_URL && !CONFIG.DRIVE_API_URL.startsWith('PASTE_');
+  }
+  function showToast(msg, kind){
+    const el = document.createElement('div');
+    el.className = 'toast' + (kind ? ' ' + kind : '');
+    el.textContent = msg;
+    toastStack.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('fade');
+      setTimeout(() => el.remove(), 250);
+    }, 2400);
+  }
+
+  function catalogNo(i){ return 'No. ' + String(i + 1).padStart(3, '0'); }
+  function formatDate(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  // ---------- render ----------
+  function render(){
+    wall.innerHTML = '';
+    animateCount(photos.length);
+    emptyState.style.display = photos.length ? 'none' : 'block';
+
+    photos.forEach((p, i) => {
+      const frame = document.createElement('div');
+      frame.className = 'frame';
+      frame.dataset.id = p.id;
+      frame.style.animationDelay = Math.min(i * 40, 400) + 'ms';
+      frame.innerHTML = `
+        <div class="photo-wrap">
+          <img src="${p.url}" alt="${escapeHtml(p.name)}" loading="lazy">
+          <div class="hover-actions">
+            <button class="mini-btn share-btn" title="Share"><span>⤴</span><span>Share</span></button>
+            <button class="mini-btn danger del-btn" title="Delete"><span>✕</span><span>Delete</span></button>
+          </div>
+        </div>
+        <div class="placard">
+          <span class="cat">${catalogNo(i)}</span>
+          <span class="date">${formatDate(p.createdTime)}</span>
+        </div>
+      `;
+      frame.querySelector('.photo-wrap').addEventListener('click', () => openLightbox(i));
+      frame.querySelector('.share-btn').addEventListener('click', e => { e.stopPropagation(); sharePhoto(p); });
+      frame.querySelector('.del-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        confirmDelete(e.currentTarget, p, frame);
+      });
+      addTilt(frame);
+      wall.appendChild(frame);
+    });
+  }
+
+  // ---------- 3D tilt-on-hover for frames ----------
+  function addTilt(frame){
+    const maxTilt = 6; // degrees
+    frame.addEventListener('mousemove', e => {
+      const rect = frame.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      frame.classList.add('tilting');
+      frame.style.transform =
+        `perspective(700px) rotateX(${(-py * maxTilt).toFixed(2)}deg) rotateY(${(px * maxTilt).toFixed(2)}deg) translateY(-4px) scale(1.015)`;
+    });
+    frame.addEventListener('mouseleave', () => {
+      frame.classList.remove('tilting');
+      frame.style.transform = '';
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- confirm delete popover ----------
+  function confirmDelete(anchor, photo, frameEl){
+    document.querySelectorAll('.confirm-pop').forEach(p => p.remove());
+    const rect = anchor.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'confirm-pop';
+    pop.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+    pop.style.left = Math.max(8, rect.right + window.scrollX - 140) + 'px';
+    pop.innerHTML = `<span>Delete this?</span><button class="yes">Delete</button><button class="no">Cancel</button>`;
+    document.body.appendChild(pop);
+    pop.querySelector('.yes').addEventListener('click', () => {
+      pop.remove();
+      deletePhoto(photo, frameEl);
+    });
+    pop.querySelector('.no').addEventListener('click', () => pop.remove());
+    setTimeout(() => document.addEventListener('click', function onDoc(e){
+      if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', onDoc); }
+    }), 0);
+  }
+
+  // ---------- lightbox ----------
+  const lightbox = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lbImg');
+  const lbCat = document.getElementById('lbCat');
+  const lbName = document.getElementById('lbName');
+
+  function openLightbox(i){
+    lightboxIndex = i;
+    updateLightbox();
+    lightbox.classList.add('active');
+  }
+
+  window.addEventListener('load', () => document.body.classList.add('loaded'));
+  function updateLightbox(dir){
+    const p = photos[lightboxIndex];
+    if (!p) return;
+    lbImg.classList.remove('slide-next', 'slide-prev');
+    void lbImg.offsetWidth; // restart animation
+    if (dir === 'next') lbImg.classList.add('slide-next');
+    if (dir === 'prev') lbImg.classList.add('slide-prev');
+    lbImg.src = p.url;
+    lbImg.alt = p.name;
+    lbCat.textContent = catalogNo(lightboxIndex) + ' · ' + formatDate(p.createdTime);
+    lbName.textContent = p.name;
+  }
+  function closeLightbox(){ lightbox.classList.remove('active'); }
+  document.getElementById('lbClose').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+  document.getElementById('lbPrev').addEventListener('click', () => {
+    lightboxIndex = (lightboxIndex - 1 + photos.length) % photos.length;
+    updateLightbox('prev');
+  });
+  document.getElementById('lbNext').addEventListener('click', () => {
+    lightboxIndex = (lightboxIndex + 1) % photos.length;
+    updateLightbox('next');
+  });
+  document.addEventListener('keydown', e => {
+    if (!lightbox.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') document.getElementById('lbPrev').click();
+    if (e.key === 'ArrowRight') document.getElementById('lbNext').click();
+  });
+  document.getElementById('lbShare').addEventListener('click', () => sharePhoto(photos[lightboxIndex]));
+  document.getElementById('lbDelete').addEventListener('click', e => {
+    const p = photos[lightboxIndex];
+    confirmDelete(e.currentTarget, p, null);
+  });
+
+  // ---------- share ----------
+  async function sharePhoto(p){
+    const shareData = { title: p.name, text: 'Check out this photo', url: p.shareUrl };
+    if (navigator.share) {
+      try { await navigator.share(shareData); return; } catch (err) { /* user cancelled or unsupported, fall through */ }
+    }
+    try {
+      await navigator.clipboard.writeText(p.shareUrl);
+      showToast('Link copied to clipboard');
+    } catch (err) {
+      showToast('Could not copy link', 'err');
+    }
+  }
+
+  // ---------- upload ----------
+  const fileInput = document.getElementById('fileInput');
+  document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
+
+  const dropOverlay = document.getElementById('dropOverlay');
+  let dragCounter = 0;
+  window.addEventListener('dragenter', e => {
+    if (e.dataTransfer.types.includes('Files')) { dragCounter++; dropOverlay.classList.add('active'); }
+  });
+  window.addEventListener('dragleave', () => {
+    dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); }
+  });
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    dragCounter = 0;
+    dropOverlay.classList.remove('active');
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+
+  function handleFiles(fileList){
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    files.forEach(uploadOne);
+  }
+
+  async function uploadOne(file){
+    if (!backendConfigured()) { showToast('Backend not configured yet', 'err'); return; }
+
+    // placeholder "developing" card
+    const frame = document.createElement('div');
+    frame.className = 'frame developing';
+    frame.innerHTML = `
+      <div class="photo-wrap"></div>
+      <div class="upload-progress"><div class="fill" style="width:0%"></div></div>
+      <div class="placard"><span class="cat">${catalogNo(photos.length)}</span><span class="date">uploading</span></div>
+    `;
+    wall.prepend(frame);
+    emptyState.style.display = 'none';
+    const progressFill = frame.querySelector('.upload-progress .fill');
+
+    try {
+      const resized = await resizeImage(file, CONFIG.MAX_DIMENSION, CONFIG.JPEG_QUALITY);
+      setConn('busy', 'uploading…');
+      const data = await uploadWithProgress(resized, file.name, progressFill);
+      if (data.result === 'success') {
+        photos.unshift(data.file);
+        render();
+        setConn('ok', 'synced');
+        showToast('Added "' + file.name + '"');
+      } else {
+        throw new Error(data.error || 'upload failed');
+      }
+    } catch (err) {
+      frame.remove();
+      setConn('err', 'upload failed');
+      showToast('Could not add "' + file.name + '"', 'err');
+    }
+  }
+
+  // uploads via XHR so we can show real progress on the developing card
+  function uploadWithProgress(resized, name, progressFill){
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', CONFIG.DRIVE_API_URL, true);
+      xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable && progressFill) {
+          progressFill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+        }
+      };
+      xhr.onload = () => {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch (err) { reject(err); }
+      };
+      xhr.onerror = () => reject(new Error('network error'));
+      xhr.send(JSON.stringify({
+        action: 'upload',
+        name: name,
+        mimeType: resized.mimeType,
+        data: resized.base64
+      }));
+    });
+  }
+
+  function deletePhoto(p, frameEl){
+    if (frameEl) { frameEl.classList.add('removing'); }
+    closeLightbox();
+    setConn('busy', 'deleting…');
+    fetch(CONFIG.DRIVE_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'delete', id: p.id })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === 'success') {
+          photos = photos.filter(x => x.id !== p.id);
+          render();
+          setConn('ok', 'synced');
+          showToast('Deleted "' + p.name + '"');
+        } else {
+          throw new Error(data.error || 'delete failed');
+        }
+      })
+      .catch(() => {
+        setConn('err', 'delete failed');
+        showToast('Could not delete photo', 'err');
+        render();
+      });
+  }
+
+  // resize + compress client-side before upload, returns {base64, mimeType}
+  function resizeImage(file, maxDim, quality){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            const scale = maxDim / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const mimeType = 'image/jpeg';
+          const dataUrl = canvas.toDataURL(mimeType, quality);
+          resolve({ base64: dataUrl.split(',')[1], mimeType });
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- load from Drive ----------
+  async function loadPhotos(){
+    if (!backendConfigured()) { setConn('err', 'backend not configured'); return; }
+    setConn('busy', 'loading…');
+    try {
+      const res = await fetch(CONFIG.DRIVE_API_URL, { method: 'GET' });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        photos = data;
+        render();
+        setConn('ok', 'synced');
+      }
+    } catch (err) {
+      setConn('err', 'load failed');
+    }
+  }
+
+  render();
+  loadPhotos();
+</script>
+</body>
+</html>
