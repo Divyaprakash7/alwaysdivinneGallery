@@ -114,7 +114,7 @@
     font-family:'Inter', sans-serif;
     font-weight:600;
     font-size:13px;
-    padding:14px 20px;
+    padding:10px 12px;
     border-radius:999px;
     border:1px solid transparent;
     background:var(--accent);
@@ -123,7 +123,8 @@
     transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
     display:inline-flex;
     align-items:center;
-    gap:10px;
+    justify-content:center;
+    gap:0;
     position:relative;
     overflow:hidden;
     box-shadow:0 18px 30px rgba(47,111,99,0.18);
@@ -137,7 +138,7 @@
   @keyframes badgePulse{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-1px); } }
   .lightbox-inner{ opacity:0; transform:translateY(12px); transition:opacity .3s ease, transform .3s ease; }
   .lightbox.active .lightbox-inner{ opacity:1; transform:none; }
-  .btn .plus-icon{ display:inline-block; transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .btn .plus-icon{ display:inline-block; font-size:18px; line-height:1; transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
   .btn:hover .plus-icon{ transform:rotate(90deg); }
   #fileInput{ display:none; }
 
@@ -234,7 +235,26 @@
     background:var(--wall-deep);
     cursor:zoom-in;
   }
-  .frame img{ width:100%; display:block; transition:transform .35s cubic-bezier(.2,.8,.3,1); }
+  .frame.no-image .photo-wrap{
+    cursor:default;
+  }
+  .frame.no-image .photo-wrap::before{
+    content:'Image unavailable';
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:var(--ink-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    text-align:center;
+    background:rgba(247,244,239,0.95);
+    z-index:1;
+  }
+  .frame.no-image img{ display:none; }
+  .frame img{ width:100%; height:auto; display:block; transition:transform .35s cubic-bezier(.2,.8,.3,1); }
   .frame.tilting img{ transform:scale(1.045); }
 
   .frame .hover-actions{
@@ -243,25 +263,49 @@
     opacity:0; transform:translateY(-8px);
     transition:opacity .18s ease, transform .18s ease;
     pointer-events:none;
+    z-index:2;
   }
-  .frame:hover .hover-actions{
+  .frame:hover .hover-actions,
+  .frame:focus-within .hover-actions,
+  .frame:active .hover-actions{
     opacity:1; transform:translateY(0);
     pointer-events:auto;
+  }
+  .frame .photo-name{
+    display:block;
+    max-height:0;
+    opacity:0;
+    overflow:hidden;
+    transition:opacity .18s ease, max-height .18s ease;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    color:var(--ink-dim);
+    padding:0 12px 0;
+    line-height:1.5;
+    word-break:break-word;
+  }
+  .frame:hover .photo-name,
+  .frame:focus-within .photo-name,
+  .frame:active .photo-name{
+    max-height:100px;
+    opacity:1;
+    padding-bottom:12px;
   }
   .frame .photo-wrap:hover img{ transform:scale(1.045); }
   .frame .photo-wrap::after{
     content:'View';
     position:absolute; inset:0;
     display:flex; align-items:center; justify-content:center;
-    color:#F5F2EA;
+    color:rgba(245,242,234,0.95);
     font-family:'JetBrains Mono', monospace;
     font-size:12px;
     letter-spacing:0.18em;
-    background:rgba(34,31,25,0.16);
+    background:rgba(34,31,25,0.12);
     opacity:0;
     transition:opacity .18s ease;
     text-transform:uppercase;
     pointer-events:none;
+    z-index:1;
   }
   .frame .photo-wrap:hover::after{ opacity:1; }
   .mini-btn{
@@ -298,6 +342,15 @@
     padding:9px 3px 2px;
     gap:8px;
   }
+  .frame .photo-name{
+    display:none;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    color:var(--ink-dim);
+    padding:0 12px 12px;
+    line-height:1.5;
+    word-break:break-word;
+  }
   .frame .placard .cat{
     font-family:'JetBrains Mono', monospace;
     font-size:10px;
@@ -308,6 +361,25 @@
     font-family:'JetBrains Mono', monospace;
     font-size:10px;
     color:var(--ink-dim);
+  }
+
+  @media (max-width: 640px) {
+    .wrap{ padding:24px 16px 80px; }
+    header{ align-items:flex-start; gap:14px; }
+    .count-badge{ text-align:left; width:100%; }
+    .toolbar{ right:16px; bottom:16px; padding:10px 14px; }
+    .btn{ padding:12px 16px; font-size:12px; }
+    .wall{ column-count:1; column-gap:0; }
+    .frame{ margin-bottom:18px; border-radius:14px; padding:0; box-shadow:0 16px 38px rgba(34,31,25,0.08); transition:transform .18s ease, box-shadow .18s ease; }
+    .frame:active{ transform:scale(0.996); box-shadow:0 12px 28px rgba(34,31,25,0.12); }
+    .frame .photo-wrap{ border-radius:14px 14px 0 0; transition:transform .18s ease; }
+    .frame:active .photo-wrap{ transform:scale(1.01); }
+    .frame .mini-btn{ min-width:84px; height:36px; font-size:12px; }
+    .frame .mini-btn:active{ transform:scale(0.98); }
+    .frame .placard{ flex-direction:column; align-items:flex-start; padding:12px 14px 10px; gap:6px; opacity:0.9; transition:opacity .18s ease, transform .18s ease; }
+    .frame .placard .cat, .frame .placard .date{ font-size:11px; }
+    .frame .photo-name{ display:block; max-height:0; opacity:0; overflow:hidden; transition:opacity .18s ease, max-height .18s ease; }
+    .frame .photo-wrap::after{ font-size:11px; }
   }
 
   /* developing placeholder */
@@ -481,6 +553,25 @@
   .toast{ animation:toastIn .22s cubic-bezier(.2,.8,.3,1), toastPulse 8s ease-in-out infinite alternate; }
   @keyframes toastPulse{ from{ transform:translateY(0); } to{ transform:translateY(-1px); } }
 
+  @media (max-width: 640px) {
+    .lightbox{
+      padding:20px 12px;
+    }
+    .lightbox-inner{
+      max-height:100vh;
+      overflow:auto;
+    }
+    .lightbox img{
+      width:auto;
+      height:auto;
+      max-width:min(100%, calc(100vw - 48px));
+      max-height:min(70vh, calc(100vh - 180px));
+    }
+    .lightbox-meta{
+      width:100%;
+    }
+  }
+
   /* ---- Confirm delete popover ---- */
   .confirm-pop{
     position:absolute;
@@ -529,8 +620,8 @@
   </header>
 
   <div class="toolbar">
-    <button class="btn primary" id="uploadBtn">
-      <span class="plus-icon">＋</span> Add pictures
+    <button class="btn primary" id="uploadBtn" aria-label="Add pictures">
+      <span class="plus-icon">＋</span>
     </button>
     <input type="file" id="fileInput" accept="image/*" multiple>
     <div class="conn" id="conn"><span class="dot"></span><span id="connLabel">connecting…</span></div>
@@ -662,6 +753,10 @@
     return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
   }
 
+  function getPhotoUrl(photo){
+    return photo.url || photo.viewUrl || photo.webContentLink || photo.webViewLink || photo.thumbnailLink || photo.shareUrl || '';
+  }
+
   // ---------- render ----------
   function render(){
     wall.innerHTML = '';
@@ -673,9 +768,12 @@
       frame.className = 'frame';
       frame.dataset.id = p.id;
       frame.style.animationDelay = Math.min(i * 40, 400) + 'ms';
+      const imageSrc = getPhotoUrl(p);
+      const noImageClass = imageSrc ? '' : ' no-image';
+      frame.className += noImageClass;
       frame.innerHTML = `
         <div class="photo-wrap">
-          <img src="${p.url}" alt="${escapeHtml(p.name)}" loading="lazy">
+          <img src="${imageSrc}" alt="${escapeHtml(p.name)}" loading="lazy">
           <div class="hover-actions">
             <button class="mini-btn share-btn" title="Share"><span>⤴</span><span>Share</span></button>
             <button class="mini-btn danger del-btn" title="Delete"><span>✕</span><span>Delete</span></button>
@@ -685,8 +783,20 @@
           <span class="cat">${catalogNo(i)}</span>
           <span class="date">${formatDate(p.createdTime)}</span>
         </div>
+        <div class="photo-name">${escapeHtml(p.name)}</div>
       `;
-      frame.querySelector('.photo-wrap').addEventListener('click', () => openLightbox(i));
+      const image = frame.querySelector('img');
+      if (imageSrc) {
+        image.addEventListener('error', () => {
+          frame.classList.add('no-image');
+          image.alt = 'Unable to load image';
+        });
+      } else {
+        image.remove();
+      }
+      frame.querySelector('.photo-wrap').addEventListener('click', () => {
+        if (imageSrc) openLightbox(i);
+      });
       frame.querySelector('.share-btn').addEventListener('click', e => { e.stopPropagation(); sharePhoto(p); });
       frame.querySelector('.del-btn').addEventListener('click', e => {
         e.stopPropagation();
@@ -745,6 +855,11 @@
   const lbName = document.getElementById('lbName');
 
   function openLightbox(i){
+    const p = photos[i];
+    if (!getPhotoUrl(p)) {
+      showToast('Image source unavailable', 'err');
+      return;
+    }
     lightboxIndex = i;
     updateLightbox();
     lightbox.classList.add('active');
@@ -758,7 +873,7 @@
     void lbImg.offsetWidth; // restart animation
     if (dir === 'next') lbImg.classList.add('slide-next');
     if (dir === 'prev') lbImg.classList.add('slide-prev');
-    lbImg.src = p.url;
+    lbImg.src = getPhotoUrl(p);
     lbImg.alt = p.name;
     lbCat.textContent = catalogNo(lightboxIndex) + ' · ' + formatDate(p.createdTime);
     lbName.textContent = p.name;
@@ -849,7 +964,7 @@
       if (data.result === 'success') {
         photos.unshift(data.file);
         render();
-        setConn('ok', 'synced');
+        setConn('ok', 'live');
         showToast('Added "' + file.name + '"');
       } else {
         throw new Error(data.error || 'upload failed');
@@ -866,7 +981,7 @@
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', CONFIG.DRIVE_API_URL, true);
-      xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+      xhr.setRequestHeader('Content-Type', 'application/json;charset=utf-8');
       xhr.upload.onprogress = e => {
         if (e.lengthComputable && progressFill) {
           progressFill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
@@ -892,7 +1007,7 @@
     setConn('busy', 'deleting…');
     fetch(CONFIG.DRIVE_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'application/json;charset=utf-8' },
       body: JSON.stringify({ action: 'delete', id: p.id })
     })
       .then(res => res.json())
@@ -900,7 +1015,7 @@
         if (data.result === 'success') {
           photos = photos.filter(x => x.id !== p.id);
           render();
-          setConn('ok', 'synced');
+          setConn('ok', 'live');
           showToast('Deleted "' + p.name + '"');
         } else {
           throw new Error(data.error || 'delete failed');
@@ -946,17 +1061,49 @@
   async function loadPhotos(){
     if (!backendConfigured()) { setConn('err', 'backend not configured'); return; }
     setConn('busy', 'loading…');
+
+    // Try a normal fetch first (most modern setups will work).
     try {
       const res = await fetch(CONFIG.DRIVE_API_URL, { method: 'GET' });
       const data = await res.json();
       if (Array.isArray(data)) {
         photos = data;
         render();
-        setConn('ok', 'synced');
+        setConn('ok', 'live');
+        return;
       }
     } catch (err) {
-      setConn('err', 'load failed');
+      // fall through to JSONP fallback
     }
+
+    // Fallback: JSONP via script tag (circumvents CORS for GET-only listing)
+    await new Promise((resolve, reject) => {
+      const cbName = '__salonLoadCb' + Date.now();
+      window[cbName] = function(data){
+        try {
+          if (Array.isArray(data)) {
+            photos = data;
+            render();
+            setConn('ok', 'live');
+          } else {
+            setConn('err', 'load failed');
+          }
+          resolve();
+        } finally {
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+          script.remove();
+        }
+      };
+      const script = document.createElement('script');
+      script.src = CONFIG.DRIVE_API_URL + '?callback=' + cbName;
+      script.onerror = function(){
+        setConn('err', 'load failed');
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        script.remove();
+        reject(new Error('JSONP load failed'));
+      };
+      document.head.appendChild(script);
+    }).catch(() => {});
   }
 
   render();
